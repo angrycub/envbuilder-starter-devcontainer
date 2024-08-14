@@ -13,7 +13,7 @@ RUN find /etc/systemd/system \
     -exec rm \{} \;
 
 RUN apt-get update
-RUN apt-get install -y dbus systemd software-properties-common vim sudo curl wget unzip && \
+RUN apt-get install -y vim sudo curl glibc groff less unzip dbus systemd software-properties-common vim sudo curl wget unzip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -34,11 +34,19 @@ RUN useradd -m docker && echo "docker:docker" | chpasswd && \
 
 STOPSIGNAL SIGRTMIN+3
 
-# Workaround for docker/docker#27202, technique based on comments from docker/docker#9212
-CMD ["/bin/bash", "-c", "exec /sbin/init --log-target=journal 3>&1"]
 
 RUN useradd -m -s /bin/bash -G sudo coder
 USER coder
 
+COPY myCA.crt /usr/local/share/ca-certificates
+RUN sudo update-ca-certificates
+
 # Let's add a fancy prompt!
 RUN echo "PS1='🐳 \[\033[1;36m\]\h \[\033[1;34m\]\W\[\033[0;35m\] \[\033[1;36m\]# \[\033[0m\]'" > ~/.bashrc
+
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(arch).zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    sudo ./aws/install
+
+# Workaround for docker/docker#27202, technique based on comments from docker/docker#9212
+CMD ["/bin/bash", "-c", "exec /sbin/init --log-target=journal 3>&1"]
